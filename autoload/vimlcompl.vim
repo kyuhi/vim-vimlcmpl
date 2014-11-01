@@ -1,8 +1,8 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
-func! vimlcompl#complete( findstart, base )
 
+func! vimlcompl#complete( findstart, base )
     if a:findstart
         let line = getline('.')
         let start = col('.') - 1
@@ -15,7 +15,6 @@ func! vimlcompl#complete( findstart, base )
         if synname == 'vimString' || synname == 'vimLineComment'
             return []
         endif
-
         let results = []
         let line = getline('.')[ : col('.') - 2 ]
         if s:endswith( line, 's:' )
@@ -26,6 +25,8 @@ func! vimlcompl#complete( findstart, base )
             let results = s:make_local_vars()
         elseif s:endswith( line, 'a:' )
             let results = s:make_local_args()
+        elseif s:endswith( line, ':' )
+            let results = []
         else
             let results = s:make_global_funcs()
                       \ + s:make_global_vars()
@@ -92,19 +93,16 @@ func! s:make_local_args()
     if !s:ismatch( last_line, '^fu' )
         return candidates
     endif
-    let m = s:matchgroup( last_line,
-                        \ '^fu\a*!\s\+s\=:\=[a-zA-Z0-9#_]\+\s*(\(.\+\))', 1 )
-    let m = s:strip( m )
+    let func_pat = '^fu\a*!\s\+s\=:\=[a-zA-Z0-9#_]\+\s*(\(.\+\))'
+    let m = s:matchgroup( last_line, func_pat , 1 )
     if empty( m )
         return candidates
     endif
-    if m == '...'
-        call add( candidates, s:candidate( '000', 'a:var', 'v') )
-    else
-        for arg in split( m, ',' )
-            call add( candidates, s:candidate( s:strip(arg), 'a:var', 'v' ) )
-        endfor
-    endif
+    for arg in split( m, ',' )
+        let arg = s:strip( arg )
+        let arg = (arg == '...') ? '000' : arg
+        call add( candidates, s:candidate( s:strip(arg), 'a:var', 'v' ) )
+    endfor
     return l:candidates
 endfunc
 
