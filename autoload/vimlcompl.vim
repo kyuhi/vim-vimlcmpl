@@ -35,6 +35,24 @@ func! vimlcompl#complete( findstart, base )
 endfunc
 
 
+func! vimlcompl#help()
+    let word = s:get_word_in_syntax()
+    let synname = s:get_syntax_name()
+    if synname == 'vimFuncName'
+        let word .= '('
+    elseif synname == 'vimOption'
+        let word = "'" . word . "'"
+    elseif synname == 'vimCommand'
+        let word = ':' . word
+    endif
+    try
+        exec printf( 'help %s', word )
+    catch
+        call s:echohl( 'Error', 'no such a help tag "%s"', word )
+    endtry
+endfunc
+
+
 " make candidates ------------------------------------------------------------
 func! s:make_vars_or_funcs( line )
     if s:endswith( a:line, 's:' )
@@ -263,8 +281,47 @@ endfunc
 
 " etc ------------------------------------------------------------------------
 func! s:get_syntax_name()
-    let id = synID( line('.'), col('.')-1, 0 )
+    let offset = mode() == 'i' ? -1 : 0
+    let id = synID( line('.'), col('.') + offset, 0 )
     return synIDattr( id, "name" )
+endfunc
+
+
+func! s:get_word_in_syntax()
+    let [line, col] = [line('.'), col('.')]
+    let current_line = getline('.')
+    let id = synID( line, col, 0 )
+    " find start position
+    let start = col
+    while start >= 1
+        if id != synID( line, start-1, 0 ) | break | endif
+        let start -= 1
+    endwhile
+    " find end position
+    let end = col
+    let length = len( current_line )
+    while end <= length
+        if id != synID( line, end+1, 0 ) | break | endif
+        let end += 1
+    endwhile
+    let word = current_line[ start - 1 : end - 1 ]
+    return word
+endfunc
+
+
+func! s:echohl( hl, fmt, ... )
+    let print_format = []
+    if len(a:000) == 0
+        let print_format = [ a:fmt . '%s', '' ]
+    else
+        let print_format = [ a:fmt ] + a:000
+    endif
+    try
+        exec printf('echohl %s', a:hl )
+        echomsg call( 'printf', print_format )
+    finally
+        echohl None
+    endtry
 endfunc
 
 
