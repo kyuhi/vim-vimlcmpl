@@ -17,20 +17,18 @@ func! vimlcompl#complete( findstart, base )
         endif
         let results = []
         let line = getline('.')[ : col('.') - 2 ]
-        if s:endswith( line, 's:' )
-            let results = s:make_script_funcs() + s:make_script_vars()
-        elseif s:endswith( line, 'g:' )
-            let results = s:make_global_vars()
-        elseif s:endswith( line, 'l:' )
-            let results = s:make_local_vars()
-        elseif s:endswith( line, 'a:' )
-            let results = s:make_local_args()
-        elseif s:endswith( line, ':' )
-            let results = []
+        if s:iscommand( line )
+            let results = s:make_global_cmds() + s:make_builtin_cmds()
+        elseif s:endswith( line, '&' ) || s:endswith( line, '&l:' ) " options
+            let results = s:make_options()    
+        elseif s:endswith( line, ':' ) " expressions
+            let results = s:make_vars_or_funcs( line )
         else
             let results = s:make_global_funcs()
-                      \ + s:make_global_vars()
-                      \ + s:make_global_cmds()
+            \           + s:make_global_vars()
+            \           + s:make_global_cmds()
+            \           + s:make_builtin_cmds()
+            \           + s:make_builtin_funcs()
         endif
         return filter( results, 'match(v:val.word, a:base) == 0' )
     endif
@@ -38,51 +36,81 @@ endfunc
 
 
 " make candidates ------------------------------------------------------------
+func! s:make_vars_or_funcs( line )
+    if s:endswith( a:line, 's:' )
+        return s:make_script_funcs() + s:make_script_vars()
+    elseif s:endswith( a:line, 'g:' )
+        return s:make_global_vars()
+    elseif s:endswith( a:line, 'l:' )
+        return s:make_local_vars()
+    elseif s:endswith( a:line, 'a:' )
+        return s:make_local_args()
+    else
+        return []
+    endif
+endfunc
+
+
 func! s:make_local_vars()
     return s:make_candidates( s:in_function_lines(),
-                            \ 'let\s\+\([a-zA-Z0-9_]\+\)',
-                            \ 'l:var',
-                            \ 'v' )
+    \                         'let\s\+\([a-zA-Z0-9_]\+\)',
+    \                         'l:var',
+    \                         'v' )
 endfunc
 
 
 func! s:make_global_vars()
     return s:make_candidates( s:redir_lines( 'let g:' ),
-                            \ '^\(\w\+\)',
-                            \ 'g:var',
-                            \ 'v' )
+    \                         '^\(\w\+\)',
+    \                         'g:var',
+    \                         'v' )
 endfunc
 
 
 func! s:make_global_funcs()
     return s:make_candidates( s:redir_lines( 'function' ),
-                            \ '^function\s\+\([a-zA-Z0-9#_]\+\)',
-                            \ 'g:fun',
-                            \ 'f' )
+    \                         '^function\s\+\([a-zA-Z0-9#_]\+\)',
+    \                         'g:fun',
+    \                         'f' )
 endfunc
 
 
 func! s:make_global_cmds()
     return s:make_candidates( s:redir_lines( 'command' ),
-                            \ '^!\=\s\+\([a-zA-Z0-9_]\+\)',
-                            \ 'cmd',
-                            \ 'c' )
+    \                         '^!\=\s\+\([a-zA-Z0-9_]\+\)',
+    \                         'cmd',
+    \                         'c' )
 endfunc
 
 
 func! s:make_script_funcs()
     return s:make_candidates( s:whole_lines(),
-                            \ '^fu\a*!\s\+s:\([a-zA-Z0-9_]\+\)',
-                            \ 's:fun',
-                            \ 'f' )
+    \                         '^fu\a*!\s\+s:\([a-zA-Z0-9_]\+\)',
+    \                         's:fun',
+    \                         'f' )
 endfunc
 
 
 func! s:make_script_vars()
     return s:make_candidates( s:whole_lines(),
-                            \ 'let\s\+s:\([a-zA-Z0-9_]\+\)',
-                            \ 's:var',
-                            \ 'v' )
+    \                         'let\s\+s:\([a-zA-Z0-9_]\+\)',
+    \                         's:var',
+    \                         'v' )
+endfunc
+
+
+func! s:make_builtin_funcs()
+    return s:make_candidates_from_file(
+    \           expand('<sfile>:p:h') . '/builtinfuncs.dict',
+    \           'func', 'f' )
+    
+endfunc
+
+
+func! s:make_builtin_cmds()
+    return s:make_candidates_from_file(
+    \           expand('<sfile>:p:h') . '/builtincmds.dict',
+    \           'cmd', 'c' )
 endfunc
 
 
@@ -107,11 +135,30 @@ func! s:make_local_args()
 endfunc
 
 
+func! s:make_options()
+    let candidates = []
+    for line in s:redir_lines( 'set all' )
+        for opt in split(line, '\s\+')
+            let lhs = s:matchgroup( opt, '\(\a\+\)=\(.\+\)', 1 )
+            if lhs != ''
+                call add( candidates, s:candidate( lhs, 'opt', 'o' ) )
+                if lhs == 'errorformat'
+                    break
+                endif
+            elseif s:ismatch( opt, '\a\+' )
+                call add( candidates, s:candidate( opt, 'opt', 'o' ) )
+            endif
+        endfor
+    endfor
+    return candidates
+endfunc
+
+
 func! s:candidate( word, menu, kind )
     return { 'word' : a:word,
-           \ 'menu' : '[' . a:menu . ']',
-           \ 'kind' : a:kind
-           \ }
+    \        'menu' : '[' . a:menu . ']',
+    \        'kind' : a:kind
+    \ }
 endfunc
 
 
@@ -125,6 +172,17 @@ func! s:make_candidates( lines, pattern, menu, kind )
     endfor
     return candidates
 endfunc
+
+
+func! s:make_candidates_from_file( filename, menu, kind )
+    if filereadable( a:filename )
+        return map( readfile( a:filename ),
+        \           's:candidate( v:val, a:menu, a:kind )' )
+    else
+        return []
+    endif
+endfunc
+
 
 
 " get lines ------------------------------------------------------------------
@@ -166,6 +224,15 @@ func! s:ismatch( str, pat )
 endfunc
 
 
+func! s:startswith( str, start )
+    if -1 != match( a:str, '^' . a:start )
+        return 1
+    else
+        return 0
+    endif
+endfunc
+
+
 func! s:endswith( str, end )
     if -1 != match( a:str, a:end . '$' )
         return 1
@@ -186,6 +253,11 @@ func! s:matchgroup( str, pattern, num )
         return l[ a:num ]
     endif
     return ''
+endfunc
+
+
+func! s:iscommand( s )
+    return match( a:s, '^\s\+$' ) != -1 || match( a:s, '^\s\+\w\+$' ) != -1
 endfunc
 
 
