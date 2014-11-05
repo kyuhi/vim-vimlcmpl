@@ -153,7 +153,7 @@ endfunc
 "   to_candidate() : convert object into vim completion candidate.
 
 
-let s:funcdef_pat = '^fu\%[nction]\%(!\)\=\s\+\(s:\)\=\(\a[[:alnum:]#_]*\)\s*(\(.*\)\{-})'
+let s:funcdef_pat = '^fu\%[nction]\%(!\)\=\s\+\(s:\)\=\(\a[[:alnum:]#_]*\)\s*(\(.*\)\?)'
 func! s:funcdef_object( line )
     let mlist = matchlist( a:line, s:funcdef_pat )
     if empty( mlist ) | return {} | endif
