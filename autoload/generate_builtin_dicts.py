@@ -24,13 +24,12 @@ def lines_in_dir( dirname, ignore_prefixs=() ):
 
 def main(doc_root_dir):
     # search commands and write
-    cmd_rx = re.compile( r':(\[\w+\])?(?P<word>\w+(\[\w+\])?)' )
+    cmd_rx = re.compile( r':(\[\w+\])?(?P<word>[a-z]\w*(\[\w+\])?)' )
     cmd_set = set()
     cmd_lines = lines_in_dir( doc_root_dir, ignore_prefixs=('os', 'tags') )
     for line in cmd_lines:
         m = cmd_rx.match( line )
-        if not m:
-            continue
+        if not m: continue
         try:
             name = m.group( 'word' )
             cmd_set.add( name.replace('[', '').replace(']', '') )
@@ -39,14 +38,14 @@ def main(doc_root_dir):
     writelist( 'builtincmds.dict', cmd_set )
 
     # search functions and write
-    fun_rx = re.compile( r'(\w+)\(' )
+    fun_rx = re.compile( r'([a-z][a-z0-9_]*)\(([a-zA-Z0-9_, \{\}\]\[]*?)\)' )
     fun_set = set()
     with open( os.path.join( doc_root_dir, 'eval.txt' ) ) as fp:
         for line in fp.readlines():
             m = fun_rx.match( line )
-            if not m:
-                continue
-            fun_set.add( m.group(1) )
+            if not m: continue
+            args = re.sub( '[\{\}]', '', m.group(2).strip() )
+            fun_set.add( 'function! {}({})'.format( m.group(1), args ) )
     writelist( 'builtinfuncs.dict', fun_set )
 
 

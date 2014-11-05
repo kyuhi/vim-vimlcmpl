@@ -1,271 +1,303 @@
-py3eval
-fnameescape
-fnamemodify
-float2nr
-synIDattr
-virtcol
-did_filetype
-has_key
-remote_send
-complete_add
-setbufvar
-synconcealed
-getcurpos
-getftype
-getcmdtype
-matcharg
-remote_expr
-hlexists
-getcharmod
-argidx
-getqflist
-add
-getpid
-pow
-input
-diff_hlID
-has
-getreg
-getline
-match
-localtime
-hlID
-setmatches
-synstack
-get
-changenr
-filewritable
-remote_peek
-wincol
-ceil
-submatch
-inputrestore
-sqrt
-histadd
-shiftwidth
-histget
-mapcheck
-string
-byte2line
-undofile
-insert
-search
-resolve
-reverse
-strtrans
-winrestview
-remove
-synIDtrans
-maparg
-min
-fmod
-bufwinnr
-taglist
-setloclist
-round
-exists
-getbufvar
-setpos
-buflisted
-globpath
-tabpagewinnr
-cosh
-matchadd
-visualmode
-undotree
-escape
-libcallnr
-filereadable
-winline
-cindent
-append
-asin
-histnr
-uniq
-xor
-winnr
-confirm
-server2client
-foldclosed
-complete_check
-luaeval
-setwinvar
-reltimestr
-abs
-getfperm
-exepath
-findfile
-strchars
-soundfold
-mode
-eventhandler
-foreground
-pyeval
-extend
-byteidx
-screencol
-getcwd
-iconv
-argv
-inputlist
-atan2
-len
-sinh
-searchdecl
-argc
-log
-cos
-indent
-matchlist
-winwidth
-strpart
-synID
-items
-getwinposx
-getcmdpos
-stridx
-writefile
-filter
-sha256
-map
-getbufline
-strridx
-screenchar
-acos
-tempname
-getwinvar
-col
-strftime
-rename
-tabpagenr
-mkdir
-screenattr
-lispindent
-histdel
-readfile
-winsaveview
-inputsecret
-toupper
-printf
-matchdelete
-arglistid
-serverlist
-strdisplaywidth
-getfsize
-str2nr
-getchar
-foldtext
-executable
-or
-type
-foldtextresult
-searchpair
-browse
-invert
-foldlevel
-system
-bufexists
-wildmenumode
-searchpairpos
-call
-getftime
-mzeval
-setreg
-getmatches
-trunc
-gettabwinvar
-haslocaldir
-empty
-function
-complete
-str2float
-tabpagebuflist
-remote_foreground
-shellescape
-screenrow
-matchend
-cscope_connection
-gettabvar
-settabvar
-bufname
-line
-copy
-prevnonblank
-clearmatches
-matchstr
-count
-setline
-nr2char
-join
-tanh
-line2byte
-log10
-diff_filler
-cursor
-values
-nextnonblank
-getloclist
-winbufnr
-delete
-and
-sort
-getwinposy
-reltime
-scanf
-matchaddpos
-inputsave
-deepcopy
-tan
-spellbadword
-strlen
-byteidxcomp
-setcmdpos
-winheight
-pumvisible
-getpos
-floor
-hostname
-range
-bufnr
-tr
-isdirectory
-strwidth
-split
-char2nr
-expr8
-getcmdwintype
-sin
-getcmdline
-libcall
-repeat
-tolower
-atan
-index
-keys
-max
-glob
-searchpos
-substitute
-getregtype
-simplify
-browsedir
-setqflist
-eval
-settabwinvar
-finddir
-foldclosedend
-expand
-feedkeys
-tagfiles
-inputdialog
-hasmapto
-garbagecollect
-islocked
-remote_read
-getfontname
-winrestcmd
-bufloaded
-exp
-pathshorten
-spellsuggest
-systemlist
+function! shiftwidth()
+function! has(feature)
+function! cursor(lnum, col [, coladd])
+function! string(expr)
+function! strwidth(expr)
+function! winrestcmd()
+function! getbufline(expr, lnum [, end])
+function! hlexists(name)
+function! ceil(expr)
+function! strlen(expr)
+function! getloclist(nr)
+function! getline(lnum [, end])
+function! buflisted(expr)
+function! getbufvar(expr, varname [, def])
+function! system(expr [, input])
+function! cursor(list)
+function! min(list)
+function! shellescape(string [, special])
+function! col(expr)
+function! acos(expr)
+function! delete(fname)
+function! cosh(expr)
+function! atan2(expr, expr)
+function! getwinposx()
+function! log10(expr)
+function! spellsuggest(word [, max [, capital]])
+function! winsaveview()
+function! mapcheck(name[, mode [, abbr]])
+function! getchar([expr])
+function! finddir(name[, path[, count]])
+function! strdisplaywidth(expr[, col])
+function! function(s)
+function! screenrow()
+function! matchaddpos(group, pos[, priority[, id]])
+function! strchars(expr)
+function! str2nr(expr [, base])
+function! matchstr(expr, pat[, start[, count]])
+function! tolower(expr)
+function! fmod(expr1, expr2)
+function! strpart(src, start[, len])
+function! localtime()
+function! cos(expr)
+function! values(dict)
+function! getwinvar(winnr, varname [, def])
+function! matchadd(group, pattern[, priority[, id]])
+function! foreground()
+function! tabpagewinnr(tabarg[, arg])
+function! winnr([arg])
+function! taglist(expr)
+function! hasmapto(what [, mode [, abbr]])
+function! getcharmod()
+function! simplify(filename)
+function! getfontname([name])
+function! rename(from, to)
+function! setloclist(nr, list [, action])
+function! tempname()
+function! gettabwinvar(tabnr, winnr, varname [, def])
+function! fnameescape(fname)
+function! remote_foreground(server)
+function! readfile(fname [, binary [, max]])
+function! py3eval(expr)
+function! reltimestr(time)
+function! split(expr [, pattern [, keepempty]])
+function! argv(nr)
+function! strtrans(expr)
+function! bufexists(expr)
+function! getmatches()
+function! deepcopy(expr [, noref])
+function! histdel(history [, item])
+function! strdisplaywidth(expr [, col])
+function! float2nr(expr)
+function! setmatches(list)
+function! winnr([expr])
+function! getcurpos()
+function! match(expr, pat[, start[, count]])
+function! cindent(lnum)
+function! reltime([start [, end]])
+function! trunc(expr)
+function! arglistid([winnr, [ tabnr]])
+function! setbufvar(expr, varname, val)
+function! argc()
+function! get(dict, key [, def])
+function! serverlist()
+function! or(expr, expr)
+function! screenchar(row, col)
+function! add(list, item)
+function! floor(expr)
+function! empty(expr)
+function! filewritable(file)
+function! toupper(expr)
+function! inputsave()
+function! inputdialog(prompt [, text [, cancelreturn]])
+function! complete(startcol, matches)
+function! indent(lnum)
+function! prevnonblank(lnum)
+function! bufnr(expr)
+function! bufname(expr)
+function! clearmatches()
+function! settabwinvar(tabnr, winnr, varname, val)
+function! pow(x, y)
+function! getcmdwintype()
+function! stridx(haystack, needle[, start])
+function! libcallnr(libname, funcname, argument)
+function! inputsecret(prompt [, text])
+function! getregtype([regname])
+function! argidx()
+function! getreg([regname [, 1 [, list]]])
+function! resolve(filename)
+function! libcall(lib, func, arg)
+function! asin(expr)
+function! matchaddpos(group, list[, priority[, id]])
+function! strridx(haystack, needle [, start])
+function! complete_check()
+function! maparg(name[, mode [, abbr [, dict]]])
+function! exp(expr)
+function! gettabwinvar(tabnr, winnr, name [, def])
+function! substitute(expr, pat, sub, flags)
+function! feedkeys(string [, mode])
+function! searchdecl(name [, global [, thisblock]])
+function! invert(expr)
+function! scanf()
+function! get(list, idx [, def])
+function! remote_send(server, string [, idvar])
+function! wincol()
+function! append(lnum, string)
+function! foldtext()
+function! setqflist(list [, action])
+function! get(dict, key [, default])
+function! bufnr(expr [, create])
+function! split(expr [, pat [, keepempty]])
+function! setreg(regname, value [,options])
+function! atan2(expr1, expr2)
+function! submatch(nr[, list])
+function! glob(expr [, nosuf [, list]])
+function! histadd(history,item)
+function! keys(dict)
+function! systemlist(expr [, input])
+function! remote_expr(server, string [, idvar])
+function! did_filetype()
+function! executable(expr)
+function! argv()
+function! getpos(expr)
+function! items(dict)
+function! getcmdpos()
+function! matchend(expr, pat[, start[, count]])
+function! call(func, arglist [, dict])
+function! spellbadword([sentence])
+function! has_key(dict, key)
+function! tagfiles()
+function! findfile(name[, path[, count]])
+function! input(prompt [, text [, completion]])
+function! exepath(expr)
+function! tabpagebuflist([arg])
+function! soundfold(word)
+function! reverse(list)
+function! tanh(expr)
+function! matcharg(nr)
+function! settabvar(tabnr, varname, val)
+function! cursor(lnum, col [, off])
+function! strftime(format [, time])
+function! setreg(n, v[, opt])
+function! len(expr)
+function! settabvar(nr, varname, val)
+function! winbufnr(nr)
+function! remote_peek(serverid [, retvar])
+function! writefile(list, fname [, binary])
+function! libcallnr(lib, func, arg)
+function! getpid()
+function! extend(expr1, expr2 [, expr3])
+function! getwinposy()
+function! nr2char(expr[, utf8])
+function! undotree()
+function! garbagecollect([atexit])
+function! browse(save, title, initdir, default)
+function! add(list, expr)
+function! setline(lnum, line)
+function! cscope_connection([num , dbpath [, prepend]])
+function! setcmdpos(pos)
+function! count(comp, expr [, ic [, start]])
+function! getqflist()
+function! foldclosedend(lnum)
+function! inputlist(textlist)
+function! sinh(expr)
+function! luaeval(expr[, expr])
+function! setloclist(nr, list[, action])
+function! getcmdtype()
+function! searchpos(pattern [, flags [, stopline [, timeout]]])
+function! log(expr)
+function! line(expr)
+function! getwinvar(nr, varname [, def])
+function! remove(dict, key)
+function! getftype(fname)
+function! sqrt(expr)
+function! setqflist(list[, action])
+function! tan(expr)
+function! eval(string)
+function! setline(lnum, text)
+function! getftime(fname)
+function! argv([nr])
+function! getline(lnum, end)
+function! eventhandler()
+function! mzeval(expr)
+function! fnameescape(string)
+function! confirm(msg [, choices [, default [, type]]])
+function! synconcealed(lnum, col)
+function! synstack(lnum, col)
+function! undofile(name)
+function! append(lnum, list)
+function! complete_add(expr)
+function! sort(list [, func [, dict]])
+function! arglistid([winnr, [ tabnr ]])
+function! winwidth(nr)
+function! globpath(path, expr [, nosuf [, list]])
+function! pyeval(expr)
+function! getline(lnum)
+function! fnamemodify(fname, mods)
+function! virtcol(expr)
+function! remove(list, idx [, end])
+function! iconv(expr, from, to)
+function! getfperm(fname)
+function! sha256(string)
+function! foldtextresult(lnum)
+function! haslocaldir()
+function! histadd(history, item)
+function! gettabvar(nr, varname [, def])
+function! tr(src, fromstr, tostr)
+function! getcmdline()
+function! libcall(libname, funcname, argument)
+function! nextnonblank(lnum)
+function! mkdir(name [, path [, prot]])
+function! type(expr)
+function! byteidx(expr, nr)
+function! wildmenumode()
+function! tabpagenr([arg])
+function! stridx(haystack, needle [, start])
+function! pathshorten(expr)
+function! getcwd()
+function! char2nr(expr[, utf8])
+function! inputrestore()
+function! append(lnum, expr)
+function! bufloaded(expr)
+function! exists(expr)
+function! copy(expr)
+function! islocked(expr)
+function! diff_filler(lnum)
+function! isdirectory(directory)
+function! getfsize(fname)
+function! histnr(history)
+function! line2byte(lnum)
+function! max(list)
+function! bufwinnr(expr)
+function! screencol()
+function! mode([expr])
+function! matchdelete(id)
+function! search(pattern [, flags [, stopline [, timeout]]])
+function! filereadable(file)
+function! foldclosed(lnum)
+function! deepcopy(expr[, noref])
+function! strftime(format[, time])
+function! byteidxcomp(expr, nr)
+function! setpos(expr, list)
+function! histget(history [, index])
+function! hostname()
+function! tabpagewinnr(tabarg [, arg])
+function! foldlevel(lnum)
+function! setwinvar(nr, varname, val)
+function! lispindent(lnum)
+function! screenattr(row, col)
+function! spellbadword()
+function! index(list, expr [, start [, ic]])
+function! remote_read(serverid)
+function! function(name)
+function! join(list [, sep])
+function! byte2line(byte)
+function! round(expr)
+function! uniq(list [, func [, dict]])
+function! browsedir(title, initdir)
+function! winheight(nr)
+function! winrestview(dict)
+function! matchlist(expr, pat[, start[, count]])
+function! get(list, idx [, default])
+function! visualmode([expr])
+function! str2float(expr)
+function! xor(expr, expr)
+function! gettabvar(tabnr, varname [, def])
+function! pumvisible()
+function! server2client(clientid, string)
+function! winline()
+function! insert(list, item [, idx])
+function! sin(expr)
+function! map(expr, string)
+function! escape(string, chars)
+function! atan(expr)
+function! repeat(expr, count)
+function! count(list, expr [, start [, ic]])
+function! range(expr [, max [, stride]])
+function! changenr()
+function! expand(expr [, nosuf [, list]])
+function! abs(expr)
+function! type(name)
+function! filter(expr, string)
+function! inputdialog(p [, t [, c]])
+function! and(expr, expr)

@@ -1,7 +1,10 @@
 let s:save_cpo = &cpo
 set cpo&vim
 
+let s:script_dirname = expand( '<sfile>:p:h' )
 
+
+" interface {{{1
 func! vimlcompl#complete( findstart, base )
     if a:findstart
         let line = getline('.')
@@ -17,20 +20,22 @@ func! vimlcompl#complete( findstart, base )
         endif
         let results = []
         let line = getline('.')[ : col('.') - 2 ]
-        if s:iscommand( line )
+        if line =~ '^\s*\%(\a[[:alnum:]_]*\)$' " commands?
             let results = s:make_global_cmds() + s:make_builtin_cmds()
-        elseif s:endswith( line, '&' ) || s:endswith( line, '&l:' ) " options
+        elseif line =~# '\%(&\|&l:\)$' " options?
             let results = s:make_options()    
-        elseif s:endswith( line, ':' ) " expressions
+        elseif line =~# ':$' " namespaces?
             let results = s:make_vars_or_funcs( line )
         else
             let results = s:make_global_funcs()
-            \           + s:make_global_vars()
             \           + s:make_global_cmds()
             \           + s:make_builtin_cmds()
             \           + s:make_builtin_funcs()
+            \           + s:make_local_vars()
         endif
-        return filter( results, 'match(v:val.word, a:base) == 0' )
+        let pat = '^' . a:base
+        return map( filter( results, 'v:val.name =~ pat' ),
+        \           'v:val.to_candidate()' )
     endif
 endfunc
 
@@ -38,12 +43,9 @@ endfunc
 func! vimlcompl#help()
     let word = s:get_word_in_syntax()
     let synname = s:get_syntax_name()
-    if synname == 'vimFuncName'
-        let word .= '('
-    elseif synname == 'vimOption'
-        let word = "'" . word . "'"
-    elseif synname == 'vimCommand'
-        let word = ':' . word
+    if     synname == 'vimFuncName' | let word .= '('
+    elseif synname == 'vimOption'   | let word = "'" . word . "'"
+    elseif synname == 'vimCommand'  | let word = ':' . word
     endif
     try
         exec printf( 'help %s', word )
@@ -53,118 +55,90 @@ func! vimlcompl#help()
 endfunc
 
 
-" make candidates ------------------------------------------------------------
+" candidate {{{1
 func! s:make_vars_or_funcs( line )
-    if s:endswith( a:line, 's:' )
+    if     a:line =~# 's:$'
         return s:make_script_funcs() + s:make_script_vars()
-    elseif s:endswith( a:line, 'g:' )
-        return s:make_global_vars()
-    elseif s:endswith( a:line, 'l:' )
+    elseif a:line =~# 'l:$'
         return s:make_local_vars()
-    elseif s:endswith( a:line, 'a:' )
+    elseif a:line =~# 'a:$'
         return s:make_local_args()
-    else
-        return []
     endif
+    for pat in [ 'g:', 'w:', 'b:', 't:' ]
+        if a:line =~# pat . '$' | return s:make_variables( pat ) | endif
+    endfor
+    return []
 endfunc
 
 
 func! s:make_local_vars()
-    return s:make_candidates( s:in_function_lines(),
-    \                         'let\s\+\([a-zA-Z0-9_]\+\)',
-    \                         'l:var',
-    \                         'v' )
-endfunc
-
-
-func! s:make_global_vars()
-    return s:make_candidates( s:redir_lines( 'let g:' ),
-    \                         '^\(\w\+\)',
-    \                         'g:var',
-    \                         'v' )
-endfunc
-
-
-func! s:make_global_funcs()
-    return s:make_candidates( s:redir_lines( 'function' ),
-    \                         '^function\s\+\([a-zA-Z0-9#_]\+\)',
-    \                         'g:fun',
-    \                         'f' )
-endfunc
-
-
-func! s:make_global_cmds()
-    return s:make_candidates( s:redir_lines( 'command' ),
-    \                         '^!\=\s\+\([a-zA-Z0-9_]\+\)',
-    \                         'cmd',
-    \                         'c' )
-endfunc
-
-
-func! s:make_script_funcs()
-    return s:make_candidates( s:whole_lines(),
-    \                         '^fu\a*!\s\+s:\([a-zA-Z0-9_]\+\)',
-    \                         's:fun',
-    \                         'f' )
+    return s:make_objects_with_func( s:in_function_lines(), 's:let_object', 'l:' )
 endfunc
 
 
 func! s:make_script_vars()
-    return s:make_candidates( s:whole_lines(),
-    \                         'let\s\+s:\([a-zA-Z0-9_]\+\)',
-    \                         's:var',
-    \                         'v' )
+    return s:make_objects_with_func( s:whole_lines(), 's:let_object', 's:' )
 endfunc
 
 
-func! s:make_builtin_funcs()
-    return s:make_candidates_from_file(
-    \           expand('<sfile>:p:h') . '/builtinfuncs.dict',
-    \           'func', 'f' )
-    
+func! s:make_global_funcs()
+    return s:make_objects_with_func( s:redir_lines( 'function' ), 's:funcdef_object' )
 endfunc
 
 
-func! s:make_builtin_cmds()
-    return s:make_candidates_from_file(
-    \           expand('<sfile>:p:h') . '/builtincmds.dict',
-    \           'cmd', 'c' )
+func! s:make_script_funcs()
+    return s:make_objects_with_func( s:whole_lines(), 's:funcdef_object', 's:' )
 endfunc
 
 
 func! s:make_local_args()
-    let candidates = []
-    let lines = s:in_function_lines()
-    let last_line = lines[ -1 ]
-    if !s:ismatch( last_line, '^fu' )
-        return candidates
+    let def_line = s:in_function_lines()[ - 1 ]
+    let func_def = s:funcdef_object( def_line )
+    if empty( func_def ) | return [] | endif
+    return map( func_def.get_args(), 's:object(v:val, "a:", "v")' )
+endfunc
+
+
+func! s:make_global_cmds()
+    let pat = '^!\=\s\+\(\u[[:alnum:]_]*\)'
+    let words = s:matches_from_lines( s:redir_lines( 'command' ), pat )
+    return s:make_objects_with_words( words, 'command', 'c' )
+endfunc
+
+
+func! s:make_variables( ns )
+    let pat = '^\(\a[[:alnum:]_#]*\)'
+    let words = s:matches_from_lines( s:redir_lines( 'let ' . a:ns ), pat )
+    return s:make_objects_with_words( words, a:ns, 'v' )
+endfunc
+
+
+func! s:make_builtin_funcs()
+    let filename = s:script_dirname . '/builtinfuncs.dict'
+    if filereadable( filename )
+        return s:make_objects_with_func( readfile( filename ), 's:funcdef_object' )
     endif
-    let func_pat = '^fu\a*!\s\+s\=:\=[a-zA-Z0-9#_]\+\s*(\(.\+\))'
-    let m = s:matchgroup( last_line, func_pat , 1 )
-    if empty( m )
-        return candidates
+    return []
+endfunc
+
+
+func! s:make_builtin_cmds()
+    let filename = s:script_dirname . '/builtincmds.dict'
+    if filereadable( filename )
+        return s:make_objects_with_words( readfile( filename ), 'command', 'c' )
     endif
-    for arg in split( m, ',' )
-        let arg = s:strip( arg )
-        let arg = (arg == '...') ? '000' : arg
-        call add( candidates, s:candidate( s:strip(arg), 'a:var', 'v' ) )
-    endfor
-    return l:candidates
+    return []
 endfunc
 
 
 func! s:make_options()
     let candidates = []
     for line in s:redir_lines( 'set all' )
-        for opt in split(line, '\s\+')
-            let lhs = s:matchgroup( opt, '\(\a\+\)=\(.\+\)', 1 )
-            if lhs != ''
-                call add( candidates, s:candidate( lhs, 'opt', 'o' ) )
-                if lhs == 'errorformat'
-                    break
-                endif
-            elseif s:ismatch( opt, '\a\+' )
-                call add( candidates, s:candidate( opt, 'opt', 'o' ) )
+        for opt in split( line, '\s\+' )
+            let lhs = s:matchgroup( opt, '^\(\a\+\)=\%(.\+\)\=', 1 )
+            if lhs == '' | continue
+            elseif lhs == 'errorformat' | break
+            else | call add( candidates, s:object( lhs, 'option', 'o' ) )
             endif
         endfor
     endfor
@@ -172,38 +146,90 @@ func! s:make_options()
 endfunc
 
 
-func! s:candidate( word, menu, kind )
+" candidate.object {{{1
+
+" each candidate objects require to define:
+"   name : name of candidate (to be used to compare with query).
+"   to_candidate() : convert object into vim completion candidate.
+
+
+let s:funcdef_pat = '^fu\%[nction]\%(!\)\=\s\+\(s:\)\=\(\a[[:alnum:]#_]*\)\s*(\(.*\)\{-})'
+func! s:funcdef_object( line )
+    let mlist = matchlist( a:line, s:funcdef_pat )
+    if empty( mlist ) | return {} | endif
+    let self = { 'ns' : mlist[1],
+    \            'name' : mlist[2],
+    \            'argsstr' : mlist[3] }
+
+    func! self.to_candidate()
+        let syntax = self.ns . '(' . s:strip(self.argsstr) . ')'
+        return s:candidate( self.name, syntax, 'f' )
+    endfunc
+
+    func! self.get_args()
+        let args = []
+        for arg in map( split( self.argsstr, ',' ), 's:strip( v:val )' )
+            if arg == '...' | let arg = '000' | endif
+            call add( args, arg )
+        endfor
+        return args
+    endfunc
+
+    return self
+endfunc
+
+
+let s:let_pat = '^\s*let\s\+\(l:\|s:\|g:\)\=\(\a[[:alnum:]_]*\)\s*=\(.\+\)'
+func! s:let_object( line )
+    let mlist = matchlist( a:line, s:let_pat )
+    if empty( mlist ) | return {} | endif
+    let self = { 'ns' : empty(mlist[1]) ? 'l:' : mlist[1],
+    \            'name' : mlist[2],
+    \            'expr' : mlist[3] }
+
+    func! self.to_candidate()
+        return s:candidate( self.name, self.ns, 'v' )
+    endfunc
+
+    return self
+endfunc
+
+
+func! s:object( word, menu, kind )
+    let self = { 'name' : a:word, 'menu' : a:menu, 'kind' : a:kind }
+
+    func! self.to_candidate()
+        return s:candidate( self.name, self.menu, self.kind )
+    endfunc
+
+    return self
+endfunc
+
+
+func! s:make_objects_with_func( lines, map_func, ... )
+    let objects = map( a:lines, printf( '%s( v:val )', a:map_func ) )
+    let predicate = ( len(a:000) == 0 )
+    \             ? '!empty(v:val)'
+    \             : printf( '!empty(v:val) && v:val.ns == "%s"', a:1 )
+    return filter( objects, predicate )
+endfunc
+
+
+func! s:make_objects_with_words( words, menu, kind )
+    return map( a:words, 's:object( v:val, a:menu, a:kind )' )
+endfunc
+
+
+func! s:candidate(word, menu, kind)
     return { 'word' : a:word,
-    \        'menu' : '[' . a:menu . ']',
-    \        'kind' : a:kind
+    \        'menu' : a:menu,
+    \        'kind' : a:kind,
+    \        'icase' : &l:ignorecase,
     \ }
 endfunc
 
 
-func! s:make_candidates( lines, pattern, menu, kind )
-    let candidates = []
-    for line in a:lines
-        let m = s:matchgroup( line, a:pattern, 1 )
-        if !empty( m )
-            call add( candidates, s:candidate( m, a:menu, a:kind ) )
-        endif
-    endfor
-    return candidates
-endfunc
-
-
-func! s:make_candidates_from_file( filename, menu, kind )
-    if filereadable( a:filename )
-        return map( readfile( a:filename ),
-        \           's:candidate( v:val, a:menu, a:kind )' )
-    else
-        return []
-    endif
-endfunc
-
-
-
-" get lines ------------------------------------------------------------------
+" getlines {{{1
 func! s:redir_lines(cmd)
     " retuns string to be redirected by "cmd"(string).
     let s = ''
@@ -218,13 +244,10 @@ func! s:in_function_lines()
     let list = []
     for i in range( line('.'), 1, -1 )
         let line = getline( i )
-        if s:ismatch( line, '^endf' )
-            break
-        elseif s:ismatch( line, '^fu' )
-            call add( list, line )
-            break
+        if line =~# '^endf' | break
         else
             call add( list, line )
+            if line =~# '^fu' | break | endif
         endif
     endfor
     return list
@@ -232,34 +255,11 @@ endfunc
 
 
 func! s:whole_lines()
-    return getbufline( bufnr('%'), 1, line('$') )
+    return getline( 1, line('$') )
 endfunc
 
 
-" helper functions for strings -----------------------------------------------
-func! s:ismatch( str, pat )
-    return match( a:str, a:pat ) == 0
-endfunc
-
-
-func! s:startswith( str, start )
-    if -1 != match( a:str, '^' . a:start )
-        return 1
-    else
-        return 0
-    endif
-endfunc
-
-
-func! s:endswith( str, end )
-    if -1 != match( a:str, a:end . '$' )
-        return 1
-    else
-        return 0
-    endif
-endfunc
-
-
+" string {{{1
 func! s:strip( s )
     return substitute( substitute( a:s, '\s\+$', '', '' ), '^\s\+', '', '' )
 endfunc
@@ -274,14 +274,16 @@ func! s:matchgroup( str, pattern, num )
 endfunc
 
 
-func! s:iscommand( s )
-    return match( a:s, '^\s\+$' ) != -1 || match( a:s, '^\s\+\w\+$' ) != -1
+func! s:matches_from_lines( lines, pattern, ... )
+    let group_no = ( empty( a:000 ) ? 1 : a:1 )
+    return filter( map( a:lines, 's:matchgroup( v:val, a:pattern, group_no )' ),
+    \              '!empty( v:val )' )
 endfunc
 
 
-" etc ------------------------------------------------------------------------
+" helper.vim {{{1
 func! s:get_syntax_name()
-    let offset = mode() == 'i' ? -1 : 0
+    let offset = ( mode() == 'i' ) ? -1 : 0
     let id = synID( line('.'), col('.') + offset, 0 )
     return synIDattr( id, "name" )
 endfunc
@@ -301,7 +303,7 @@ func! s:get_word_in_syntax()
     let end = col
     let length = len( current_line )
     while end <= length
-        if id != synID( line, end+1, 0 ) | break | endif
+        if id != synID( line, end + 1, 0 ) | break | endif
         let end += 1
     endwhile
     let word = current_line[ start - 1 : end - 1 ]
@@ -317,7 +319,7 @@ func! s:echohl( hl, fmt, ... )
         let print_format = [ a:fmt ] + a:000
     endif
     try
-        exec printf('echohl %s', a:hl )
+        exec printf( 'echohl %s', a:hl )
         echomsg call( 'printf', print_format )
     finally
         echohl None
